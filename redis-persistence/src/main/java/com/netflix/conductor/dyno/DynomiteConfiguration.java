@@ -22,6 +22,9 @@ public interface DynomiteConfiguration extends Configuration {
     String NON_QUORUM_PORT_PROPERTY_NAME = "queues.dynomite.nonQuorum.port";
     int NON_QUORUM_PORT_DEFAULT_VALUE = 22122;
 
+    String DYNOMITE_ADMIN_PORT_PROPERTY_NAME = "workflow.dynomite.cluster.adminPort";
+    int DYNOMITE_ADMIN_PORT_DEFAULT_VALUE = -1;
+
     default String getCluster() {
         return getProperty(CLUSTER_PROPERTY_NAME, CLUSTER_DEFAULT_VALUE);
     }
@@ -32,6 +35,10 @@ public interface DynomiteConfiguration extends Configuration {
 
     default String getHosts() {
         return getProperty(HOSTS_PROPERTY_NAME, null);
+    }
+
+    default int getDynomiteAdminPort() {
+        return getIntProperty(DYNOMITE_ADMIN_PORT_PROPERTY_NAME, DYNOMITE_ADMIN_PORT_DEFAULT_VALUE);
     }
 
     default String getRootNamespace() {
