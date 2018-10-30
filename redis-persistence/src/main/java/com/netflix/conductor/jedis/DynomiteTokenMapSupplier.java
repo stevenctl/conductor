@@ -18,7 +18,7 @@ import java.util.Set;
 public class DynomiteTokenMapSupplier extends HttpEndpointBasedTokenMapSupplier {
     private static final Logger Logger = LoggerFactory.getLogger(DynomiteTokenMapSupplier.class);
 
-    public DynomiteTokenMapSupplier(int port) {
+    DynomiteTokenMapSupplier(int port) {
         super("http://{hostname}:{port}/cluster_describe", port);
     }
 
@@ -27,18 +27,19 @@ public class DynomiteTokenMapSupplier extends HttpEndpointBasedTokenMapSupplier 
         // Doing this since not all tokens are received from an individual call
         // to a dynomite server
         // hence trying them all
-        Set<HostToken> allTokens = new HashSet<HostToken>();
-        for (Host host : activeHosts) {
-            try {
-                List<HostToken> hostTokens = parseTokenListFromJson(getTopologyJsonPayload((host.getHostAddress())));
-                for (HostToken hToken : hostTokens) {
-                    Logger.info("AUTOC3: in Abstract class, token = " + hToken.getToken() + " host = " + hToken.getHost().toString());
-                    allTokens.add(hToken);
-                }
-            } catch (Exception e) {
-                Logger.warn("Could not get json response for token topology [" + e.getMessage() + "]");
+        Set<HostToken> allTokens = new HashSet<>();
+        //for (Host host : activeHosts) {
+        Host host = activeHosts.iterator().next();
+        try {
+            List<HostToken> hostTokens = parseTokenListFromJson(host.getHostAddress(), getTopologyJsonPayload((host.getHostAddress())));
+            for (HostToken hToken : hostTokens) {
+                Logger.info("AUTOC3: in Abstract class, token = " + hToken.getToken() + " host = " + hToken.getHost().toString());
+                allTokens.add(hToken);
             }
+        } catch (Exception e) {
+            Logger.warn("Could not get json response for token topology [" + e.getMessage() + "]");
         }
+        //}10.124.15.65:22222
         return new ArrayList<>(allTokens);
     }
 
@@ -65,10 +66,11 @@ public class DynomiteTokenMapSupplier extends HttpEndpointBasedTokenMapSupplier 
      * ]
      * }
      *
-     * @param json
-     * @return
+     * @param hostAddress address that we request from
+     * @param json        response from request
+     * @return list of tokens and hosts with IP, hostname, tokens
      */
-    private List<HostToken> parseTokenListFromJson(String json) {
+    private List<HostToken> parseTokenListFromJson(String hostAddress, String json) {
         List<HostToken> hostTokens = new ArrayList<>();
         ObjectMapper om = new ObjectMapper();
         try {
@@ -80,8 +82,17 @@ public class DynomiteTokenMapSupplier extends HttpEndpointBasedTokenMapSupplier 
                     for (JsonNode server : rack.get("servers")) {
                         String serverName = server.get("name").asText();
                         String serverHost = server.get("name").asText();
-                        int port = server.get("name").asInt();
-                        long token = server.get("name").asLong();
+
+                        if ("0.0.0.0".equals(serverHost)) {
+                            serverHost = hostAddress;
+                        }
+
+                        if ("0.0.0.0".equals(serverName)) {
+                            serverName = hostAddress;
+                        }
+
+                        int port = server.get("port").asInt();
+                        long token = server.get("token").asLong();
                         Host host = new Host(serverName, serverHost, port, rackName, dcName, Status.Up);
                         HostToken hostToken = new HostToken(token, host);
                         hostTokens.add(hostToken);
