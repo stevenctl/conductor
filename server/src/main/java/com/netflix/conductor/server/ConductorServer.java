@@ -24,6 +24,7 @@ import com.google.inject.servlet.GuiceFilter;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
 import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
+import com.netflix.conductor.redis.utils.DynomiteTokenMapSupplier;
 import com.netflix.conductor.redis.utils.JedisMock;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
@@ -191,6 +192,13 @@ public class ConductorServer {
 	}
 
 	private TokenMapSupplier getTokenMapSupplier(List<Host> dynoHosts) {
+
+		final int dynomiteAdminPort = conductorConfig.getIntProperty("dynomiteAdminPort", -1);
+
+		if(dynomiteAdminPort > -1) {
+			return new DynomiteTokenMapSupplier(dynomiteAdminPort);
+		}
+
 		return new TokenMapSupplier() {
 
             HostToken token = new HostToken(1L, dynoHosts.get(0));
